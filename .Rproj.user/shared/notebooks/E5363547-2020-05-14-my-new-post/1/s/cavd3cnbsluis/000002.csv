@@ -1,0 +1,10 @@
+"0","# python programming to find the square root of an object
+
+num = 16
+num_sqrt = num ** 0.5
+print('The square root of %0.3f is %0.3f'%(num ,num_sqrt))
+
+
+"
+"1","The square root of 16.000 is 4.000
+"

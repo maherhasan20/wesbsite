@@ -17,7 +17,7 @@
       <pubDate>Thu, 14 May 2020 00:00:00 +0000</pubDate>
       
       <guid>/blog/my-new-post/</guid>
-      <description> # this is a python chunk print(&amp;quot;hello world!&amp;quot;) ## hello world! x = &amp;quot;dog&amp;quot; # this is an R code chunk library(reticulate) py$x ## [1] &amp;quot;dog&amp;quot; y &amp;lt;- 2 r.y+1 == 3 ## True </description>
+      <description># this is a python chunk print(&amp;quot;hello world!&amp;quot;) ## hello world! x = &amp;quot;dog&amp;quot; # this is an R code chunk library(reticulate) py$x ## [1] &amp;quot;dog&amp;quot; y &amp;lt;- 2 r.y+1 == 3 ## True # python programming to find the square root of an object num = 16 num_sqrt = num ** 0.5 print(&amp;#39;The square root of %0.3f is %0.3f&amp;#39;%(num ,num_sqrt))  ## The square root of 16.000 is 4.</description>
     </item>
     
     <item>
