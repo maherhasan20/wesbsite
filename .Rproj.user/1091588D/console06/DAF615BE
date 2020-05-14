@@ -1,0 +1,9 @@
+]0;/stor/home/mh49522/Website]0;mh49522@educcomp01: ~/Website[01;32mmh49522@educcomp01[00m:[01;34m~/Website[00m$ [K]0;mh49522@educcomp01: ~/Website[01;32mmh49522@educcomp01[00m:[01;34m~/Website[00m$ ls
+config.toml  [0m[01;34mcontent[0m  index.Rmd  [01;34mpublic[0m  [01;34mstatic[0m  [01;34mthemes[0m  Website.Rproj
+]0;/stor/home/mh49522/Website]0;mh49522@educcomp01: ~/Website[01;32mmh49522@educcomp01[00m:[01;34m~/Website[00m$ git init
+Initialized empty Git repository in /stor/home/mh49522/Website/.git/
+]0;/stor/home/mh49522/Website]0;mh49522@educcomp01: ~/Website[01;32mmh49522@educcomp01[00m:[01;34m~/Website[00m$ ls
+config.toml  [0m[01;34mcontent[0m  index.Rmd  [01;34mpublic[0m  [01;34mstatic[0m  [01;34mthemes[0m  Website.Rproj
+]0;/stor/home/mh49522/Website]0;mh49522@educcomp01: ~/Website[01;32mmh49522@educcomp01[00m:[01;34m~/Website[00m$ ls - a[K[Ka
+[0m[01;34m.[0m  [01;34m..[0m  config.toml  [01;34mcontent[0m  [01;34m.git[0m  index.Rmd  [01;34mpublic[0m  [01;34m.Rproj.user[0m  [01;34mstatic[0m  [01;34mthemes[0m  Website.Rproj
+]0;/stor/home/mh49522/Website]0;mh49522@educcomp01: ~/Website[01;32mmh49522@educcomp01[00m:[01;34m~/Website[00m$ git add .

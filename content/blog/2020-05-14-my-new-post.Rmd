@@ -1,0 +1,25 @@
+---
+title: My New Post
+author: ''
+date: '2020-05-14'
+slug: my-new-post
+categories: []
+tags: []
+description: ''
+---
+
+```{python}
+# this is a python chunk
+print("hello world!")
+x = "dog"
+```
+
+```{r}
+# this is an R code chunk
+library(reticulate)
+py$x
+y <- 2
+```
+```{python}
+r.y+1 == 3
+```

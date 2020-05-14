@@ -1,0 +1,130 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+---
+title: 'Project 1: Exploratory Data Analysis'
+author: "Maher Hasan"
+date: '3/15/2020'
+output:
+  pdf_document: yes
+    toc: no
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#Data sets
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+SAT <- read.csv("SATGPA.csv")
+Freshman <- read.csv("FirstYearGPA.csv")
+```
+
+*Introduction: The Two Datasets that I have chosen were acquired from https://vincentarelbundock.github.io/Rdatasets/datasets.html.  I chose to focus on this dataset as I portrays the association between GPA and SAT scores, from high school to freshman year.  I think that it does a good job of showing the correlation between the two, as we would expect to see higher SAT scores and higher GPA's to be associated.  This was interesting to me as I remember doing a bunch of research on these topics when I first thought about applying for college, and set myself goals to achieve to get into the university of my choosing.*
+
+
+```{R}
+#Tidying
+Freshman
+Freshmen <- Freshman %>% pivot_wider(names_from = "Male", values_from = "FirstGen") %>% glimpse()
+
+#Leads to many NA's in our table; not ideal
+#need to rename the SAT categories so that they do not create multiple unnecessary NA's
+
+names(Freshman)[4] <- "VerbalSAT"
+names(Freshman)[5] <- "MathSAT"
+
+
+```
+
+*The pivot_wider() gave me NA's for my values, but it separate the pool of applicants from their Male groups and FirstGen groups.  The info it gives us is that, if there is a NA for 1, then the value was 0, and if there was an NA for 0, then the value was 1.  This isn't ideal, but omitting the NA's would be removing data completely.  Our SAT dataset was already tidy.  I renamed the SAT score variables in the Freshman dataset as it would tidy the joining process *
+```{R}
+#Joining
+
+joined <- full_join(SAT,Freshman)
+glimpse(joined)
+
+```
+*I chose to do a full_join() as it brings together the two datasets, and joins them by the GPA, and two SAT scores*
+```{r}
+#Wrangling
+
+#Filter to get data to see only Male scores in First year
+FreshMale <- joined %>% filter(Male == 1) %>% glimpse()
+#Get a statstic to see the average Math SAT score from this sub-poulation
+FreshMale %>% summarise(mean_MathSAT = mean(MathSAT))
+
+FreshFemale <- joined %>% filter(Male == 0) %>% glimpse()
+FreshFemale %>% summarise(mean(MathSAT))
+#What if we want to see which student had the highest GPA?
+
+joined %>% arrange(desc(GPA))
+
+#How about seeing a very particular result?  Finding the scores between a range?
+joined %>% filter(between(GPA,3.50,4.00)) %>% select(MathSAT,VerbalSAT) %>% na.omit()
+
+#Lets get a value from the variables we already have
+joined %>% mutate(total = (MathSAT + VerbalSAT))
+
+#Let's organize the data and get a group for results
+joined %>% group_by(VerbalSAT,MathSAT) %>% summarise(mean_GPA = mean(GPA))
+
+joined <- joined %>% mutate(total = (MathSAT + VerbalSAT))
+
+```
+
+*I used the 6 wrangling functions to give a better insight into what is happening in the data, and to see how the data is connected to each other and help us make sense of the data's importance.  We can see how different the male and female sub-populations perform on certain parts of the SAT, and also compare and contrast their GPA's*
+
+```{r}
+#Visualizing
+
+ggplot(joined, aes(GPA,total)) + geom_point(aes(color = Male)) + ggtitle("Total SAT Score vs GPA") + theme_classic() + scale_color_continuous() +
+  scale_x_continuous(breaks = 10) + scale_y_continuous()
+
+ggplot(FreshMale,aes(MathSAT,VerbalSAT)) +geom_point(aes(color = GPA)) + geom_abline() +ggtitle("Verbal SAT Scores vs Math SAT Scores in First Year Males, explained by GPA")
+
+ggplot(FreshFemale,aes(MathSAT,VerbalSAT)) +geom_point(aes(color = GPA)) + geom_abline() +ggtitle("Verbal SAT Scores vs Math SAT Scores in First Year Females, explained by GPA")
+
+
+```
+
+*In the first graph, we can see the the breakdown across all students, and see the total SAT scores being explained by the students GPA.  We can see that there is a clear postiive correlation, with an increase in SAT scores being associated positively with an increase in overall GPA.  The following two graphs break this up into the Male and Female students respectively.  In these graphs, we look at the correlation between Verbal and Math SAT scores, as we expect a student to perform somewhat consistently across these two tests.*
+```{r}
+#Dimentionality Reduction
+install.packages('cluster')
+library(cluster)
+
+
+pam_dat <- joined %>% select(-FirstGen, -HSGPA, -Male, -HU, -SS, -White, -CollegeBound)
+
+sil_width<-vector() 
+for(i in 2:10){
+pam_fit <- joined %>% select(-FirstGen, -HSGPA, -Male, -HU, -SS, -White, -CollegeBound) %>% pam(i)
+sil_width[i] <- pam_fit$silinfo$avg.width }
+ggplot()+geom_line(aes(x=1:10,y=sil_width))+scale_x_continuous(name="k",breaks=1:10)
+
+pam1 <- pam_dat %>% pam(k = 2)
+pam1
+
+pamclust <- pam_dat %>% mutate(cluster = as.factor(pam1$clustering))
+pamclust %>% ggplot(aes(total,GPA, color = cluster)) + geom_point()
+```
+*The clustering is not entirely visible in this set of data*
+
+```{R, echo=F}
+## DO NOT DELETE THIS BLOCK!
+sessionInfo()
+Sys.time()
+Sys.info()
+```{R}

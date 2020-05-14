@@ -1,0 +1,190 @@
+---
+title: 'Project 2: Modeling, Testing, and Predicting'
+author: "Maher Hasan"
+date: "5/3/2020"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,message=FALSE,fig.width=8, fig.height=5, linewidth=60)
+options(tibble.width = 100,width = 100)
+library(tidyverse)
+```
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(lmtest)
+library(sandwich)
+```
+
+## Data & Introduction
+
+# I will be using the "aids"" dataset which I have procured from https://vincentarelbundock.github.io/Rdatasets/datasets.html.  It gives us a representation of cases of AIDS reporting in England and Wales, in certain years.  It satisfies the requirements for number of variables, and number of observations.  It also is an interesting subject for me, as I look forward to potentially pursuing a degree in public health in grad school.  
+# The columns represent the following
+# year = Year of diagnosis
+# qurater - the quarter of the year in which the diagnosis was made
+# delay = the time delay (in months) in reporting of the diagnosis
+# dud = indicator of censoring - we don't have full information for this category, so we only see values of 0 and 1
+# y = number of aids cases reported
+```{r}
+my_data <- read.csv("aids.csv")
+
+```
+
+## MANOVA
+```{r}
+set.seed(1234)
+dplyr::sample_n(my_data,10)
+
+covmats <- my_data %>% group_by(year) %>% do(covs=cov(.[2:3]))
+for (i in 1:10) {print(as.character(covmats$year[i])); print(covmats$covs[i])
+}
+
+man1 <- manova(cbind(delay,y)~year,data=my_data)
+summary(man1)
+
+my_data %>% group_by(year) %>% summarize(mean(delay),mean(y))
+
+pairwise.t.test(my_data$delay, my_data$year, p.adj="none")
+pairwise.t.test(my_data$y, my_data$year,p.adj = "none")
+```
+*We see that there is a significant relationship between the delay in cases reported and cases reported within the specific years. Significant differences were found across the 10 year period, for at least one of the dependent variables, Pillai = 0.07, pseudo F = 23.96, p< 0.001.  I completed 1 MANOVA and 2 t tests.  According to the t-test, it appears that the 'y' group, the number of cases reported is the main group that differs throughout the years.*
+
+## Randomization
+```{r}
+rand_dist <- vector()
+for (i in 1:5000) {
+  new<- data.frame(delay = sample(my_data$delay), cases = my_data$y)
+  rand_dist[i] <- mean(new[new$delay == "1983",]$cases) - 
+                  mean(new[new$delay == "1984",]$cases)
+  
+}
+
+rand_dist
+
+```
+
+*I was unable to conduct a randomization test that made sense in this dataset*
+
+## Linear Regression
+```{r}
+# Ho : Controlling for year, delay does not explain variation in cases
+# Ha : Controlling for delay, year does not explain variation in cases
+fit <- lm(year ~ delay + y, data = my_data); summary(fit)
+
+resids <- fit$residuals
+fitted <- fit$fitted.values
+
+ggplot()+geom_histogram(aes(resids),bins=20)
+ggplot()+geom_qq(aes(sample=resids))+geom_qq_line(aes(sample=resids), color='red')
+
+ks.test(resids, "pnorm", mean = 0, sd(resids))
+shapiro.test(resids)
+summary(fit)
+
+summary(fit)$coef[,1:2]
+coeftest(fit,vcov. = vcovHC(fit))[,1:2]
+```
+*Upon graphically observing the data, it doesn't appear to meet our assumptions for normality.  We can formally test for this by using the ks.test. We received extremely low p-values.*   
+
+## Bootstrapped
+```{r}
+
+boot_dat <- sample_frac(my_data,replace = T)
+
+samp_distn <- replicate(5000, {
+  boot_dat <- sample_frac(my_data, replace =T)
+  fit <- lm(year ~ delay + y, data = boot_dat)
+  coef(fit)
+})
+
+samp_distn %>% t %>% as.data.frame %>% summarize_all(sd)
+samp_distn %>% t %>% as.data.frame %>% gather %>% group_by(key) %>% summarize(lower=quantile(value,.025), upper=quantile(value,.975))
+
+
+
+coeftest(fit)[,1:2]
+coeftest(fit,vcov. = vcovHC(fit))[,1:2]
+samp_distn %>% t %>% as.data.frame %>% summarize_all(sd)
+
+```
+*We see that the bootstrapped is closer to the robust values*
+
+## Logistic Regression
+```{r}
+fitz <- lm(year~y, data = my_data)
+summary(fitz)
+
+
+predict(fitz,newdata = data.frame(y = c(1,10)))
+
+fit <- glm(year~y, data = my_data)
+coeftest(fit)
+
+exp(coef(fit))
+
+predict(fit,newdata = data.frame(y = 10), type ="response")
+
+table(truth = my_data$year, prediction = my_data$dud) %>% addmargins()
+
+```
+
+
+
+*I attempted to create an ROC graph, but my results were not printing out, and I didn't know why that was.  Wasn't receiving an error code either*
+
+# LASSO
+```{r}
+library(glmnet)
+
+y <- as.matrix(my_data$y)
+x <- model.matrix(y~., data = my_data)[,-1]
+head(x)
+
+x<- scale(x)
+cv <- cv.glmnet(x,y)
+{plot(cv$glmnet.fit, "lambda", label=TRUE); abline(v = log(cv$lambda.1se)); abline(v = log(cv$lambda.min),lty=2)}
+
+lasso <- glmnet(x,y,lambda = cv$lambda.1se)
+coef(lasso)
+```
+
+
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+```{r}
+## DO NOT DELETE THIS BLOCK!
+sessionInfo()
+Sys.time()
+Sys.info()
+```
+
+
+
